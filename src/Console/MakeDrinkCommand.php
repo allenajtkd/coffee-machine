@@ -51,64 +51,64 @@ class MakeDrinkCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $drinkType = strtolower($input->getArgument('drink-type'));
+        try {
+            $drinkType = strtolower($input->getArgument('drink-type'));
+            $money = $input->getArgument('money');
+            $sugars = $input->getArgument('sugars');
+            $extraHot = $input->getOption('extra-hot');
+
+            $this->validateInput($drinkType, $money, $sugars);
+
+            $this->processOrder($drinkType, $sugars, $extraHot);
+        } 
+    }
+
+    private function validateInput($drinkType, $money, $sugars)
+    {
         if (!in_array($drinkType, ['tea', 'coffee', 'chocolate'])) {
-            $output->writeln('The drink type should be tea, coffee or chocolate.');
-        } else {
+            throw new \InvalidArgumentException('The drink type should be tea, coffee, or chocolate.');
+        }
+
+        switch ($drinkType) {
             /**
              * Tea       --> 0.4
              * Coffee    --> 0.5
              * Chocolate --> 0.6
              */
-            $money = $input->getArgument('money');
-            switch ($drinkType) {
-                case 'tea':
-                    if ($money < 0.4) {
-                        $output->writeln('The tea costs 0.4.');
-                        return;
-                    }
-                    break;
-                case 'coffee':
-                    if ($money < 0.5) {
-                        $output->writeln('The coffee costs 0.5.');
-                        return;
-                    }
-                    break;
-                case 'chocolate':
-                    if ($money < 0.6) {
-                        $output->writeln('The chocolate costs 0.6.');
-                        return;
-                    }
-                    break;
-            }
-
-            $sugars = $input->getArgument('sugars');
-            $stick = false;
-            $extraHot = $input->getOption('extra-hot');
-            if ($sugars >= 0 && $sugars <= 2) {
-                $output->write('You have ordered a ' . $drinkType);
-                if ($extraHot) {
-                    $output->write(' extra hot');
+            case 'tea':
+                if ($money < 0.4) {
+                    throw new \InvalidArgumentException('The tea costs 0.4.');
                 }
-
-                if ($sugars > 0) {
-                    $stick = true;
-                    $output->write(' with ' . $sugars . ' sugars (stick included)');
+                break;
+            case 'coffee':
+                if ($money < 0.5) {
+                    throw new \InvalidArgumentException('The coffee costs 0.5.');
                 }
-                $output->writeln('');
-            } else {
-                $output->writeln('The number of sugars should be between 0 and 2.');
-            }
+                break;
+            case 'chocolate':
+                if ($money < 0.6) {
+                    throw new \InvalidArgumentException('The chocolate costs 0.6.');
+                }
+                break;
+        }
 
-            $pdo = MysqlPdoClient::getPdo();
-
-            $stmt= $pdo->prepare( 'INSERT INTO orders (drink_type, sugars, stick, extra_hot) VALUES (:drink_type, :sugars, :stick, :extra_hot)');
-            $stmt->execute([
-                'drink_type' => $drinkType,
-                'sugars' => $sugars,
-                'stick' => $stick ?: 0,
-                'extra_hot' => $extraHot ?: 0,
-            ]);
+        if ($sugars < 0 || $sugars > 2) {
+            throw new \InvalidArgumentException('The number of sugars should be between 0 and 2.');
         }
     }
+
+    private function processOrder($drinkType, $sugars, $extraHot)
+    {
+        $stick = $sugars > 0;
+
+        $pdo = $this->pdoClient;
+        $stmt= $pdo->prepare('INSERT INTO orders (drink_type, sugars, stick, extra_hot) VALUES (:drink_type, :sugars, :stick, :extra_hot)');
+        $stmt->execute([
+            'drink_type' => $drinkType,
+            'sugars' => $sugars,
+            'stick' => $stick ? 1 : 0,
+            'extra_hot' => $extraHot ? 1 : 0,
+        ]);
+    }
+
 }
