@@ -12,6 +12,14 @@ class MakeDrinkCommand extends Command
 {
     protected static $defaultName = 'app:order-drink';
 
+    private $pdoClient;
+
+    public function __construct(PDO $pdoClient)
+    {
+        $this->pdoClient = $pdoClient;
+        parent::__construct();
+    }
+
     protected function configure()
     {
         $this->addArgument(
