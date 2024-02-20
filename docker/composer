@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+HOST_USER_ID=$(id -u "$(whoami)")
+HOST_GROUP_ID=$(id -g "$(whoami)")
+
+docker run                                      \
+    --rm --interactive --tty                    \
+    --user "${HOST_USER_ID}:${HOST_GROUP_ID}"   \
+    --volume composer_cache:/tmp/cache          \
+    --volume "$PWD":/app                        \
+    --workdir /app                              \
+    composer:latest                             \
+    "$@"

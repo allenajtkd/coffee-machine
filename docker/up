@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+docker build docker/images/php-cli -t coffee-machine.php-cli
+docker network create --driver=bridge --subnet=172.50.0.0/24 coffee-machine_net
+
+docker build docker/images/mysql -t coffee-machine.mysql
+docker-compose up -d
